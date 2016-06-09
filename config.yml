@@ -1,0 +1,20 @@
+root: "http://localhost:9001"
+endpoints:
+  -
+    path: "/"
+    freq: 30.0
+  -
+    path: "/tech"
+    freq: -1.0
+  -
+    path: "/science"
+    freq: -1.0
+  -
+    path: "/business"
+    freq: -1.0
+  -
+    path: "/pop-culture"
+    freq: -1.0
+  -
+    path: "/news"
+    freq: -1.0
