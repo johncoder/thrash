@@ -12,23 +12,24 @@ Goals:
 
 
 ```yml
+root: http://localhost:9001
 endpoints:
   -
-    url: http://localhost:9001/
+    path: http://localhost:9001/
     freq: 30.0
   -
-    url: http://localhost:9001/tech
+    path: http://localhost:9001/tech
     freq: 10.0
   -
-    url: http://localhost:9001/science
+    path: http://localhost:9001/science
     freq: 10.0
   -
-    url: http://localhost:9001/pop-culture
+    path: http://localhost:9001/pop-culture
     freq: 10.0
   -
-    url: http://localhost:9001/news
+    path: http://localhost:9001/news
     freq: 10.0
   -
-    url: http://localhost:9001/business
+    path: http://localhost:9001/business
     freq: 10.0
 ```

@@ -22,7 +22,7 @@ const (
 
 var (
 	numberOfRequests   int64
-	concurrencyLevel   int
+	concurrencyLevel   int64
 	configFile         string
 	endpoint           string
 	httpTransport      *http.Transport
@@ -69,17 +69,14 @@ type (
 
 func init() {
 	flag.Int64Var(&numberOfRequests, "n", 0, "The total number of requests to make.")
-	flag.IntVar(&concurrencyLevel, "c", 1, "The number of concurrent requests to execute.")
+	flag.Int64Var(&concurrencyLevel, "c", 1, "The number of concurrent requests to execute.")
 	flag.StringVar(&configFile, "config", "./config.yml", "File path to a configuration file (yml)")
 	flag.Parse()
 	random = rand.New(rand.NewSource(time.Now().UnixNano()))
 }
 
 func isValidUrl(raw string) bool {
-	u, err := url.ParseRequestURI(raw)
-	if err == nil {
-		fmt.Println(u)
-	}
+	_, err := url.ParseRequestURI(raw)
 	return err == nil
 }
 
@@ -156,32 +153,34 @@ func randomUrl() string {
 	selection := random.Float32()
 	for url, segment := range endpointLookup {
 		if segment.start < selection && segment.stop > selection {
-			// fmt.Println("Chose:", url)
 			return url
 		}
 	}
 	return ""
 }
 
+// TODO(john): if n = 0, just start making requests and output count every 30 seconds?
 func main() {
 	httpTransport = &http.Transport{}
 	client = &http.Client{Transport: httpTransport}
 	startTime := time.Now()
+	fmt.Println("Starting thrashing:", startTime)
 	lastArg := os.Args[len(os.Args)-1]
-	smoothing := float64(0.99)
+	smoothing := float64(0.7)
 
-	queue := make(chan request, concurrencyLevel)
+	queue := make(chan request, concurrencyLevel*2)
 	completions := make(chan response, concurrencyLevel)
 	resultDistribution = make(map[string]endpointStats)
 
-	go func() {
-		for req := range queue {
-			makeRequest(completions, req)
-		}
-	}()
+	for page := int64(0); page < concurrencyLevel; page++ {
+		go func() {
+			for req := range queue {
+				makeRequest(completions, req)
+			}
+		}()
+	}
 
 	if isValidUrl(lastArg) {
-		fmt.Println("Requesting", lastArg)
 		resultDistribution[lastArg] = endpointStats{
 			url:  lastArg,
 			freq: 1.0,
@@ -195,10 +194,7 @@ func main() {
 		}()
 	} else {
 		config := readConfig(configFile)
-		// fmt.Println(config)
 		endpointLookup = buildUrlMap(config)
-		// fmt.Println(endpointLookup)
-
 		go func() {
 			for i := int64(0); i < numberOfRequests; i++ {
 				url := randomUrl()
@@ -207,8 +203,11 @@ func main() {
 		}()
 	}
 
-	count := int64(0)
+	count := int64(1)
 	interval := numberOfRequests / 10
+	if interval < 1 {
+		interval = 1
+	}
 	for current := range completions {
 		stats := resultDistribution[current.url]
 		if int64(current.duration) < stats.min {
@@ -223,25 +222,30 @@ func main() {
 			stats.failures++
 		}
 		resultDistribution[current.url] = stats
-		if count != 0 && count%interval == 0 {
+		if count%interval == 0 || count == numberOfRequests {
 			fmt.Println("Completed requests:", count, time.Since(startTime))
 		}
 		count++
-		if count >= numberOfRequests {
+		if count > numberOfRequests {
 			break
 		}
 	}
 
 	duration := time.Since(startTime)
+	totalFailures := int64(0)
+	fmt.Println("")
 	fmt.Println("Request Summaries")
 	fmt.Println("=================================")
 	for _, stats := range resultDistribution {
+		fmt.Println("")
+		totalFailures += stats.failures
 		fmt.Println(stats.url)
 		fmt.Println("  Count:  ", stats.count)
 		fmt.Println("  Success:", (1.0-(float64(stats.failures)/float64(stats.count)))*100, "%")
 		fmt.Println("  Min:    ", time.Duration(stats.min).Seconds()*1000, "ms")
 		fmt.Println("  Max:    ", time.Duration(stats.max).Seconds()*1000, "ms")
-		fmt.Println("  Avg:    ", time.Duration(stats.avg).Seconds()*1000, "ms")
+		// fmt.Println("  Avg:    ", time.Duration(stats.avg).Seconds()*1000, "ms")
+		fmt.Println("  Avg:    ", time.Duration(stats.avg), "ms")
 		if stats.freq < 1.0 {
 			fmt.Println("  Freq:   ", stats.freq*100, "%")
 		}
@@ -252,5 +256,6 @@ func main() {
 	fmt.Println("  Req Count:  ", numberOfRequests)
 	fmt.Println("  Concurrency:", concurrencyLevel)
 	fmt.Println("  Duration:   ", duration)
+	fmt.Println("  Success:    ", (1.0-(float64(totalFailures)/float64(numberOfRequests)))*100, "%")
 	fmt.Println("  Req/Sec:    ", float64(numberOfRequests)/duration.Seconds())
 }
