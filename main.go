@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"time"
 	// "strings"
 )
@@ -208,6 +209,7 @@ func main() {
 	if interval < 1 {
 		interval = 1
 	}
+	checkin := time.Now()
 	for current := range completions {
 		stats := resultDistribution[current.url]
 		if int64(current.duration) < stats.min {
@@ -223,7 +225,12 @@ func main() {
 		}
 		resultDistribution[current.url] = stats
 		if count%interval == 0 || count == numberOfRequests {
-			fmt.Println("Completed requests:", count, time.Since(startTime))
+			fmt.Print("Completed requests: ", count)
+			fmt.Print("\t", time.Since(startTime), "\t")
+			fmt.Print("Req/Sec: ")
+			fmt.Printf("%v", strconv.FormatFloat(float64(interval)/time.Since(checkin).Seconds(), 'f', -1, 32))
+			fmt.Print("\n")
+			checkin = time.Now()
 		}
 		count++
 		if count > numberOfRequests {
@@ -244,7 +251,6 @@ func main() {
 		fmt.Println("  Success:", (1.0-(float64(stats.failures)/float64(stats.count)))*100, "%")
 		fmt.Println("  Min:    ", time.Duration(stats.min).Seconds()*1000, "ms")
 		fmt.Println("  Max:    ", time.Duration(stats.max).Seconds()*1000, "ms")
-		// fmt.Println("  Avg:    ", time.Duration(stats.avg).Seconds()*1000, "ms")
 		fmt.Println("  Avg:    ", time.Duration(stats.avg), "ms")
 		if stats.freq < 1.0 {
 			fmt.Println("  Freq:   ", stats.freq*100, "%")
