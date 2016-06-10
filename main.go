@@ -210,6 +210,8 @@ func main() {
 		interval = 1
 	}
 	checkin := time.Now()
+	totalFailures := int64(0)
+	intervalFailures := int64(0)
 	for current := range completions {
 		stats := resultDistribution[current.url]
 		if int64(current.duration) < stats.min {
@@ -222,13 +224,15 @@ func main() {
 		stats.count++
 		if !current.pass {
 			stats.failures++
+			intervalFailures += stats.failures
+			totalFailures += stats.failures
 		}
 		resultDistribution[current.url] = stats
 		if count%interval == 0 || count == numberOfRequests {
 			fmt.Print("Completed requests: ", count)
 			fmt.Print("\t", time.Since(startTime), "\t")
 			fmt.Print("Req/Sec: ")
-			fmt.Printf("%v", strconv.FormatFloat(float64(interval)/time.Since(checkin).Seconds(), 'f', -1, 32))
+			fmt.Printf("%v", strconv.FormatFloat(float64(interval-intervalFailures)/time.Since(checkin).Seconds(), 'f', -1, 32))
 			fmt.Print("\n")
 			checkin = time.Now()
 		}
@@ -239,13 +243,11 @@ func main() {
 	}
 
 	duration := time.Since(startTime)
-	totalFailures := int64(0)
 	fmt.Println("")
 	fmt.Println("Request Summaries")
 	fmt.Println("=================================")
 	for _, stats := range resultDistribution {
 		fmt.Println("")
-		totalFailures += stats.failures
 		fmt.Println(stats.url)
 		fmt.Println("  Count:  ", stats.count)
 		fmt.Println("  Success:", (1.0-(float64(stats.failures)/float64(stats.count)))*100, "%")
@@ -262,6 +264,6 @@ func main() {
 	fmt.Println("  Req Count:  ", numberOfRequests)
 	fmt.Println("  Concurrency:", concurrencyLevel)
 	fmt.Println("  Duration:   ", duration)
-	fmt.Println("  Success:    ", (1.0-(float64(totalFailures)/float64(numberOfRequests)))*100, "%")
+	fmt.Println("  Success:    ", (1.0-(float64(totalFailures)/float64(numberOfRequests-totalFailures)))*100, "%")
 	fmt.Println("  Req/Sec:    ", float64(numberOfRequests)/duration.Seconds())
 }
