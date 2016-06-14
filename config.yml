@@ -4,17 +4,17 @@ endpoints:
     path: "/"
     freq: 30.0
   -
-    path: "/tech"
+    path: "/foo"
     freq: -1.0
   -
-    path: "/science"
+    path: "/bar"
     freq: -1.0
   -
-    path: "/business"
+    path: "/qaz"
     freq: -1.0
   -
-    path: "/pop-culture"
+    path: "/qux"
     freq: -1.0
   -
-    path: "/news"
+    path: "/foobar"
     freq: -1.0
