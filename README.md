@@ -61,6 +61,8 @@ endpoints:
     freq: -1.0
 ```
 
+Note that the value of `-1.0` signifies that thrash should evenly generate requests to those endpoints using the remaining percentage not specified by other endpoints.
+
 Build thrash:
 
 ```
