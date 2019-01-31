@@ -104,6 +104,7 @@ func makeRequest(done chan response, req request) {
 		return
 	}
 	defer resp.Body.Close()
+	resp.Close = true
 	io.Copy(ioutil.Discard, resp.Body)
 	done <- response{id: req.id, url: req.url, duration: time.Since(requestStartTime), pass: resp.StatusCode == 200 || resp.StatusCode == 304}
 }

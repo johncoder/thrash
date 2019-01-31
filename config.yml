@@ -1,20 +1,14 @@
-root: "http://localhost:9001"
+root: "http://localhost:8000"
 endpoints:
-  -
-    path: "/"
+  - path: "/"
     freq: 30.0
-  -
-    path: "/foo"
+  - path: "/foo"
     freq: -1.0
-  -
-    path: "/bar"
+  - path: "/bar"
     freq: -1.0
-  -
-    path: "/qaz"
+  - path: "/qaz"
     freq: -1.0
-  -
-    path: "/qux"
+  - path: "/qux"
     freq: -1.0
-  -
-    path: "/foobar"
+  - path: "/foobar"
     freq: -1.0
